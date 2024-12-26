@@ -1,127 +1,104 @@
-import itertools
 import random
 from collections import Counter
 
-# Constants
-RANKS = "23456789TJQKA"
-SUITS = "hdcs"  # hearts, diamonds, clubs, spades
-DECK = [r + s for r in RANKS for s in SUITS]
+# Define a deck of cards
+def create_deck():
+    suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
+    ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']
+    deck = [rank + ' of ' + suit for suit in suits for rank in ranks]
+    return deck
 
-# Hand Rankings
-HAND_RANKS = {
-    "High Card": 0,
-    "One Pair": 1,
-    "Two Pair": 2,
-    "Three of a Kind": 3,
-    "Straight": 4,
-    "Flush": 5,
-    "Full House": 6,
-    "Four of a Kind": 7,
-    "Straight Flush": 8,
-    "Royal Flush": 9,
-}
+def simulate_game(player_hand, opponent_hand, community_cards, num_simulations=10000):
+    deck = create_deck()
+    for card in player_hand + opponent_hand + community_cards:
+        deck.remove(card)
 
-# Helper Functions
-def create_deck(exclude=[]):
-    """Create a deck of cards excluding the specified cards."""
-    return [card for card in DECK if card not in exclude]
+    player_wins = 0
+    opponent_wins = 0
+    ties = 0
 
-def deal_hands(deck, num_hands=2, cards_per_hand=2):
-    """Deal hands for the players."""
-    hands = [random.sample(deck, cards_per_hand) for _ in range(num_hands)]
-    remaining_deck = list(set(deck) - set(itertools.chain.from_iterable(hands)))
-    return hands, remaining_deck
-
-def evaluate_hand(cards):
-    """Evaluate a poker hand and return its rank and the highest cards."""
-    def is_flush(cards):
-        suits = [c[1] for c in cards]
-        return len(set(suits)) == 1
-
-    def is_straight(cards):
-        ranks = sorted([RANKS.index(c[0]) for c in cards])
-        return all(ranks[i] + 1 == ranks[i + 1] for i in range(len(ranks) - 1))
-
-    def count_ranks(cards):
-        rank_counts = Counter(c[0] for c in cards)
-        return rank_counts.most_common()
-
-    ranks = count_ranks(cards)
-    is_flush_flag = is_flush(cards)
-    is_straight_flag = is_straight(cards)
-
-    if is_flush_flag and is_straight_flag:
-        return ("Straight Flush", cards)
-    if ranks[0][1] == 4:
-        return ("Four of a Kind", cards)
-    if ranks[0][1] == 3 and ranks[1][1] == 2:
-        return ("Full House", cards)
-    if is_flush_flag:
-        return ("Flush", cards)
-    if is_straight_flag:
-        return ("Straight", cards)
-    if ranks[0][1] == 3:
-        return ("Three of a Kind", cards)
-    if ranks[0][1] == 2 and ranks[1][1] == 2:
-        return ("Two Pair", cards)
-    if ranks[0][1] == 2:
-        return ("One Pair", cards)
-    return ("High Card", cards)
-
-def simulate_odds(hole_cards, community_cards, num_opponents=1, iterations=1000):
-    """Simulate poker odds using Monte Carlo."""
-    deck = create_deck(exclude=hole_cards + community_cards)
-    wins, ties, losses = 0, 0, 0
-
-    for _ in range(iterations):
+    for _ in range(num_simulations):
         random.shuffle(deck)
-        # Simulate community cards
-        missing_community = 5 - len(community_cards)
-        simulated_community = community_cards + deck[:missing_community]
 
-        # Simulate opponent hands
-        opponents = [deck[missing_community + i * 2: missing_community + i * 2 + 2] for i in range(num_opponents)]
-        remaining_deck = deck[missing_community + num_opponents * 2:]
+        remaining_community_cards = 5 - len(community_cards)
+        additional_cards = deck[:remaining_community_cards]
+        complete_community_cards = community_cards + additional_cards
 
-        # Evaluate player hand
-        player_hand = evaluate_hand(hole_cards + simulated_community)
+        player_best = evaluate_hand(player_hand + complete_community_cards)
+        opponent_best = evaluate_hand(opponent_hand + complete_community_cards)
 
-        # Evaluate opponent hands
-        opponent_hands = [evaluate_hand(opponent + simulated_community) for opponent in opponents]
-
-        # Compare hands
-        player_wins = sum(player_hand > opp_hand for opp_hand in opponent_hands)
-        player_ties = sum(player_hand == opp_hand for opp_hand in opponent_hands)
-
-        if player_wins == num_opponents:
-            wins += 1
-        elif player_ties > 0:
-            ties += 1
+        if player_best > opponent_best:
+            player_wins += 1
+        elif opponent_best > player_best:
+            opponent_wins += 1
         else:
-            losses += 1
+            ties += 1
 
-    total = wins + ties + losses
-    return {
-        "Wins": wins / total * 100,
-        "Ties": ties / total * 100,
-        "Losses": losses / total * 100
-    }
+    player_odds = player_wins / num_simulations
+    opponent_odds = opponent_wins / num_simulations
+    tie_odds = ties / num_simulations
 
-# Main Function
+    return player_odds, opponent_odds, tie_odds
+
+def evaluate_hand(hand):
+    # Full poker hand ranking logic
+    rank_values = {'2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10,
+                   'Jack': 11, 'Queen': 12, 'King': 13, 'Ace': 14}
+
+    rank_counts = Counter(card.split()[0] for card in hand)
+    suits = [card.split()[-1] for card in hand]
+
+    # Check for flush
+    suit_counts = Counter(suits)
+    is_flush = any(count >= 5 for count in suit_counts.values())
+
+    # Check for straight
+    sorted_ranks = sorted(rank_values[rank] for rank in rank_counts.keys())
+    is_straight = all(b == a + 1 for a, b in zip(sorted_ranks, sorted_ranks[1:]))
+
+    # Determine hand strength
+    if is_flush and is_straight:
+        return 800 + max(sorted_ranks)  # Straight flush
+    elif 4 in rank_counts.values():
+        return 700 + get_rank_score(rank_counts, rank_values, 4)  # Four of a kind
+    elif 3 in rank_counts.values() and 2 in rank_counts.values():
+        return 600 + get_rank_score(rank_counts, rank_values, 3)  # Full house
+    elif is_flush:
+        flush_ranks = [rank_values[rank] for rank, suit in zip(rank_counts.keys(), suits) if suit_counts[suit] >= 5]
+        return 500 + max(flush_ranks)  # Flush
+    elif is_straight:
+        return 400 + max(sorted_ranks)  # Straight
+    elif 3 in rank_counts.values():
+        return 300 + get_rank_score(rank_counts, rank_values, 3)  # Three of a kind
+    elif list(rank_counts.values()).count(2) == 2:
+        return 200 + get_rank_score(rank_counts, rank_values, 2, True)  # Two pair
+    elif 2 in rank_counts.values():
+        return 100 + get_rank_score(rank_counts, rank_values, 2)  # One pair
+    else:
+        return max(sorted_ranks)  # High card
+
+def get_rank_score(rank_counts, rank_values, count, is_two_pair=False):
+    # Helper to calculate score for pairs, three-of-a-kind, etc.
+    if is_two_pair:
+        pairs = [rank_values[rank] for rank, cnt in rank_counts.items() if cnt == 2]
+        return sum(pairs) + max(pairs)
+    for rank, cnt in rank_counts.items():
+        if cnt == count:
+            return rank_values[rank]
+
 def main():
-    # Input: Player hole cards and known community cards
-    hole_cards = input("Enter your hole cards (e.g., 'Ah Kd'): ").split()
-    community_cards = input("Enter community cards (if any, e.g., '2h 3d 4s'): ").split()
-    num_opponents = int(input("Enter number of opponents: "))
-
-    # Simulate odds
-    results = simulate_odds(hole_cards, community_cards, num_opponents)
+    print("Welcome to the Poker Odds Calculator!")
     
-    # Output results
-    print("\n--- Poker Odds ---")
-    for outcome, percentage in results.items():
-        print(f"{outcome}: {percentage:.2f}%")
+    player_hand = input("Enter your hand (e.g., 'Ace of Hearts, King of Diamonds'): ").split(', ')
+    opponent_hand = input("Enter opponent's hand (e.g., 'Queen of Spades, Jack of Clubs'): ").split(', ')
+    community_cards_input = input("Enter community cards (e.g., '10 of Hearts, Jack of Diamonds'), or leave blank if none: ").strip()
+    community_cards = community_cards_input.split(', ') if community_cards_input else []
 
-# Run the Program
+    player_odds, opponent_odds, tie_odds = simulate_game(player_hand, opponent_hand, community_cards)
+
+    print(f"Your winning odds: {player_odds * 100:.2f}%")
+    print(f"Opponent's winning odds: {opponent_odds * 100:.2f}%")
+    print(f"Tie odds: {tie_odds * 100:.2f}%")
+
 if __name__ == "__main__":
     main()
