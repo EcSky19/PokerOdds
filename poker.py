@@ -1,5 +1,26 @@
 import random
 from collections import Counter
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+
+app = Flask(__name__)
+CORS(app)
+
+@app.route('/calculate-odds', methods=['POST'])
+def calculate_odds():
+    data = request.json
+    player_hand = data.get('playerHand', [])
+    opponent_hand = data.get('opponentHand', [])
+    community_cards = data.get('communityCards', [])
+    player_odds, opponent_odds, tie_odds = simulate_game(player_hand, opponent_hand, community_cards)
+    return jsonify({
+        "playerOdds": player_odds,
+        "opponentOdds": opponent_odds,
+        "tieOdds": tie_odds
+    })
+
+if __name__ == "__main__":
+    app.run(debug=True)
 
 def create_deck():
     suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
