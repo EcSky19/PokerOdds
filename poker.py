@@ -1,10 +1,11 @@
-import random
-from collections import Counter
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
+
+import random
+from collections import Counter
 
 @app.route('/calculate-odds', methods=['POST'])
 def calculate_odds():
@@ -17,13 +18,12 @@ def calculate_odds():
         "playerOdds": player_odds,
         "opponentOdds": opponent_odds,
         "tieOdds": tie_odds
+
     })
-#
 
 if __name__ == "__main__":
     app.run(debug=True)
 
-##
 def create_deck():
     suits = ['Hearts', 'Diamonds', 'Clubs', 'Spades']
     ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']
