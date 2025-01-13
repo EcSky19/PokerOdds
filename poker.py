@@ -20,7 +20,6 @@ def calculate_odds():
         "tieOdds": tie_odds
 
     })
-#
 
 if __name__ == "__main__":
     app.run(debug=True)
