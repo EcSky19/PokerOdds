@@ -1,73 +1,123 @@
-import React, { useState } from "react";
-import axios from "axios";
+import React, { useState } from 'react';
 
 const App = () => {
-  const [playerHand, setPlayerHand] = useState(["", ""]);
-  const [opponentHand, setOpponentHand] = useState(["", ""]);
-  const [communityCards, setCommunityCards] = useState(["", "", "", "", ""]);
-  const [results, setResults] = useState(null);
+  const [hand, setHand] = useState([]);
+  const [community, setCommunity] = useState([]);
+  const [odds, setOdds] = useState(null);
 
-  const handleCardChange = (setFunction, index, value) => {
-    setFunction((prev) => {
-      const newSelection = [...prev];
-      newSelection[index] = value;
-      return newSelection;
-    });
+  const cardOptions = [
+    "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS",
+    "AC", "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "JC", "QC", "KC",
+    "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "JD", "QD", "KD",
+    "AH", "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", "10H", "JH", "QH", "KH"
+  ];
+
+  const handleSelect = (value, setCards, maxCards, cards) => {
+    if (value && !cards.includes(value) && cards.length < maxCards) {
+      setCards([...cards, value]);
+    }
+  };
+
+  const handleRemove = (value, setCards, cards) => {
+    setCards(cards.filter((card) => card !== value));
   };
 
   const calculateOdds = async () => {
     try {
-      const response = await axios.post("http://localhost:5000/calculate-odds", {
-        playerHand,
-        opponentHand,
-        communityCards,
+      const response = await fetch('http://127.0.0.1:5000/calculate-odds', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ hand, community }),
       });
-      setResults(response.data);
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setOdds(data.odds);
     } catch (error) {
-      console.error("Error calculating odds:", error);
+      console.error('Error calculating odds:', error);
     }
   };
 
-  const renderCardSelector = (label, hand, setFunction, count) => (
-    <div>
-      <h3>{label}</h3>
-      {[...Array(count)].map((_, i) => (
-        <select
-          key={i}
-          value={hand[i] || ""}
-          onChange={(e) => handleCardChange(setFunction, i, e.target.value)}
-        >
-          <option value="">Select Card</option>
-          {["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"]
-            .map((rank) =>
-              ["Hearts", "Diamonds", "Clubs", "Spades"].map(
-                (suit) => `${rank} of ${suit}`
-              )
-            )
-            .flat()
-            .map((card) => (
-              <option key={card} value={card}>
-                {card}
-              </option>
-            ))}
-        </select>
-      ))}
-    </div>
-  );
-
   return (
-    <div>
+    <div style={{ textAlign: "center", marginTop: "20px" }}>
       <h1>Poker Odds Calculator</h1>
-      {renderCardSelector("Player Hand", playerHand, setPlayerHand, 2)}
-      {renderCardSelector("Opponent Hand", opponentHand, setOpponentHand, 2)}
-      {renderCardSelector("Community Cards", communityCards, setCommunityCards, 5)}
-      <button onClick={calculateOdds}>Calculate Odds</button>
-      {results && (
-        <div>
-          <h2>Results</h2>
-          <p>Player Odds: {results.playerOdds * 100}%</p>
-          <p>Opponent Odds: {results.opponentOdds * 100}%</p>
-          <p>Tie Odds: {results.tieOdds * 100}%</p>
+
+      <div>
+        <h3>Select Your Hand (2 cards):</h3>
+        {hand.map((card, index) => (
+          <div key={index}>
+            <span>{card}</span>
+            <button onClick={() => handleRemove(card, setHand, hand)}>Remove</button>
+          </div>
+        ))}
+        {hand.length < 2 && (
+          <select
+            onChange={(e) => {
+              handleSelect(e.target.value, setHand, 2, hand);
+              e.target.value = "";
+            }}
+          >
+            <option value="">Select a card</option>
+            {cardOptions
+              .filter((card) => !hand.includes(card) && !community.includes(card))
+              .map((card) => (
+                <option key={card} value={card}>
+                  {card}
+                </option>
+              ))}
+          </select>
+        )}
+      </div>
+
+      <div>
+        <h3>Select Community Cards (up to 5):</h3>
+        {community.map((card, index) => (
+          <div key={index}>
+            <span>{card}</span>
+            <button onClick={() => handleRemove(card, setCommunity, community)}>Remove</button>
+          </div>
+        ))}
+        {community.length < 5 && (
+          <select
+            onChange={(e) => {
+              handleSelect(e.target.value, setCommunity, 5, community);
+              e.target.value = "";
+            }}
+          >
+            <option value="">Select a card</option>
+            {cardOptions
+              .filter((card) => !hand.includes(card) && !community.includes(card))
+              .map((card) => (
+                <option key={card} value={card}>
+                  {card}
+                </option>
+              ))}
+          </select>
+        )}
+      </div>
+
+      <button
+        onClick={calculateOdds}
+        style={{
+          marginTop: "20px",
+          padding: "10px 20px",
+          fontSize: "16px",
+          cursor: "pointer",
+        }}
+        disabled={hand.length !== 2 || community.length === 0}
+      >
+        Calculate Odds
+      </button>
+
+      {odds && (
+        <div style={{ marginTop: "20px" }}>
+          <h2>Calculated Odds</h2>
+          <p>{odds}</p>
         </div>
       )}
     </div>
