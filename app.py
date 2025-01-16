@@ -50,7 +50,7 @@ def calculate_poker_odds(hand, community):
             break
 
     return wins / total_simulations if total_simulations > 0 else 0.0
-#
+
 @app.route('/calculate-odds', methods=['POST'])
 def calculate_odds():
     """
