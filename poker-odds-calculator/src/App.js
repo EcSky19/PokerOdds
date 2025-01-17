@@ -5,7 +5,7 @@ const App = () => {
   const [community, setCommunity] = useState([]);
   const [opponent, setOpponent] = useState([]);
   const [odds, setOdds] = useState(null);
-  const [error, setError] = useState(null);
+  const [stage, setStage] = useState(0); // 0: pre-flop, 3: flop, 4: turn, 5: river
 
   const cardOptions = [
     "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS",
@@ -26,9 +26,7 @@ const App = () => {
 
   const calculateOdds = async () => {
     try {
-      setError(null); // Clear any previous errors
       console.log('Sending data to backend:', { hand, community, opponent });
-
       const response = await fetch('http://127.0.0.1:5000/calculate-odds', {
         method: 'POST',
         headers: {
@@ -38,18 +36,16 @@ const App = () => {
       });
 
       console.log('Response status:', response.status);
-
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Unknown error occurred');
+        const errorResponse = await response.json();
+        throw new Error(errorResponse.error || 'Unknown error occurred');
       }
 
       const data = await response.json();
-      console.log('Response data from backend:', data);
+      console.log('Odds received:', data);
       setOdds(data.odds);
     } catch (error) {
-      console.error('Error calculating odds:', error);
-      setError(error.message || 'An unknown error occurred');
+      console.error('Error calculating odds:', error.message);
     }
   };
 
@@ -85,17 +81,17 @@ const App = () => {
       </div>
 
       <div>
-        <h3>Select Community Cards (up to 5):</h3>
+        <h3>Select Community Cards ({stage} cards):</h3>
         {community.map((card, index) => (
           <div key={index}>
             <span>{card}</span>
             <button onClick={() => handleRemove(card, setCommunity, community)}>Remove</button>
           </div>
         ))}
-        {community.length < 5 && (
+        {community.length < stage && (
           <select
             onChange={(e) => {
-              handleSelect(e.target.value, setCommunity, 5, community);
+              handleSelect(e.target.value, setCommunity, stage, community);
               e.target.value = "";
             }}
           >
@@ -138,6 +134,37 @@ const App = () => {
         )}
       </div>
 
+      <div style={{ marginTop: "20px" }}>
+        <button
+          onClick={() => setStage(0)}
+          disabled={stage === 0}
+          style={{ margin: "5px" }}
+        >
+          Pre-Flop
+        </button>
+        <button
+          onClick={() => setStage(3)}
+          disabled={stage === 3}
+          style={{ margin: "5px" }}
+        >
+          Flop
+        </button>
+        <button
+          onClick={() => setStage(4)}
+          disabled={stage === 4}
+          style={{ margin: "5px" }}
+        >
+          Turn
+        </button>
+        <button
+          onClick={() => setStage(5)}
+          disabled={stage === 5}
+          style={{ margin: "5px" }}
+        >
+          River
+        </button>
+      </div>
+
       <button
         onClick={calculateOdds}
         style={{
@@ -146,22 +173,17 @@ const App = () => {
           fontSize: "16px",
           cursor: "pointer",
         }}
-        disabled={hand.length !== 2 || community.length === 0 || opponent.length !== 2}
+        disabled={hand.length !== 2 || opponent.length !== 2 || community.length !== stage}
       >
         Calculate Odds
       </button>
 
-      {error && (
-        <div style={{ marginTop: "20px", color: "red" }}>
-          <h2>Error</h2>
-          <p>{error}</p>
-        </div>
-      )}
-
-      {odds && !error && (
+      {odds && (
         <div style={{ marginTop: "20px" }}>
           <h2>Calculated Odds</h2>
-          <p>{odds}</p>
+          <p>Win: {odds.win}</p>
+          <p>Tie: {odds.tie}</p>
+          <p>Loss: {odds.loss}</p>
         </div>
       )}
     </div>
