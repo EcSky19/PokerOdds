@@ -3,48 +3,43 @@ from flask_cors import CORS
 import random
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Helper function: Simulate a poker game
-def simulate_game(player_hand, community_cards):
-    """
-    Simulates a single poker game by generating a random opponent hand and remaining cards.
-    This is a mock implementation; replace it with your actual poker logic.
-    """
-    deck = set(range(1, 53))  # Mock card IDs (1 to 52)
-    used_cards = set(player_hand + community_cards)
+# Convert card strings to numeric IDs for easier processing (mock example)
+def card_to_id(card):
+    suits = {'S': 0, 'C': 13, 'D': 26, 'H': 39}
+    ranks = {'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7,
+             '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13}
+    rank = ''.join(filter(str.isdigit, card)) or card[0]
+    suit = card[-1]
+    return ranks[rank] + suits[suit]
+
+# Simulate a poker game
+def simulate_game(player_hand, community_cards, opponent_hand):
+    deck = set(range(1, 53))
+    used_cards = set(player_hand + community_cards + opponent_hand)
     available_cards = list(deck - used_cards)
 
-    if len(available_cards) < 7 - len(community_cards):  # Ensure enough cards remain
+    if len(available_cards) < 5 - len(community_cards):
         raise ValueError("Not enough cards in the deck for a valid simulation.")
 
-    # Generate opponent's hand
-    opponent_hand = random.sample(available_cards, 2)
-    available_cards = list(set(available_cards) - set(opponent_hand))
-
-    # Complete the community cards if needed
+    # Fill in remaining community cards if needed
     while len(community_cards) < 5:
         community_cards.append(available_cards.pop())
 
-    # Simple win logic (replace with actual poker rules)
+    # Simple win logic (replace with actual poker evaluation logic)
     player_score = sum(player_hand) + sum(community_cards)
     opponent_score = sum(opponent_hand) + sum(community_cards)
     return player_score > opponent_score
 
 # Main function: Calculate odds
-def calculate_poker_odds(hand, community):
-    """
-    Calculate the odds of winning using Monte Carlo Simulation.
-    :param hand: List of two integers representing the player's hand cards.
-    :param community: List of integers representing community cards (up to 5).
-    :return: Win probability as a float.
-    """
-    total_simulations = 10000  # Number of Monte Carlo simulations
+def calculate_poker_odds(player_hand, community_cards, opponent_hand):
+    total_simulations = 10000
     wins = 0
 
     for _ in range(total_simulations):
         try:
-            if simulate_game(hand, community[:]):  # Use a copy of the community cards
+            if simulate_game(player_hand[:], community_cards[:], opponent_hand[:]):
                 wins += 1
         except ValueError:
             break
@@ -53,24 +48,32 @@ def calculate_poker_odds(hand, community):
 
 @app.route('/calculate-odds', methods=['POST'])
 def calculate_odds():
-    """
-    API endpoint to calculate poker odds.
-    Expects a JSON payload with 'hand' and 'community' card lists.
-    """
     try:
         data = request.json
         hand = data.get('hand', [])
         community = data.get('community', [])
-        
+        opponent = data.get('opponent', [])
+
+        # Validate inputs
         if not hand or len(hand) != 2:
             return jsonify({"error": "Hand must contain exactly two cards."}), 400
         if len(community) > 5:
             return jsonify({"error": "Community cards cannot exceed five."}), 400
+        if not opponent or len(opponent) != 2:
+            return jsonify({"error": "Opponent hand must contain exactly two cards."}), 400
 
-        odds = calculate_poker_odds(hand, community)
+        # Convert cards to IDs
+        player_hand = [card_to_id(card) for card in hand]
+        community_cards = [card_to_id(card) for card in community]
+        opponent_hand = [card_to_id(card) for card in opponent]
+
+        # Calculate odds
+        odds = calculate_poker_odds(player_hand, community_cards, opponent_hand)
+
         return jsonify({
             "hand": hand,
             "community": community,
+            "opponent": opponent,
             "odds": f"{odds:.2%}"
         })
     except Exception as e:
