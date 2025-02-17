@@ -1,0 +1,31 @@
+const playingCards = {
+  "AS": require("./assets/cards/AS.png"),
+  "2S": require("./assets/cards/2S.png"),
+  "3S": require("./assets/cards/3S.png"),
+  "4S": require("./assets/cards/4S.png"),
+  "5S": require("./assets/cards/5S.png"),
+  "6S": require("./assets/cards/6S.png"),
+  "7S": require("./assets/cards/7S.png"),
+  "8S": require("./assets/cards/8S.png"),
+  "9S": require("./assets/cards/9S.png"),
+  "10S": require("./assets/cards/10S.png"),
+  "JS": require("./assets/cards/JS.png"),
+  "QS": require("./assets/cards/QS.png"),
+  "KS": require("./assets/cards/KS.png"),
+  "AH": require("./assets/cards/AH.png"),
+  "2H": require("./assets/cards/2H.png"),
+  "3H": require("./assets/cards/3H.png"),
+  "4H": require("./assets/cards/4H.png"),
+  "5H": require("./assets/cards/5H.png"),
+  "6H": require("./assets/cards/6H.png"),
+  "7H": require("./assets/cards/7H.png"),
+  "8H": require("./assets/cards/8H.png"),
+  "9H": require("./assets/cards/9H.png"),
+  "10H": require("./assets/cards/10H.png"),
+  "JH": require("./assets/cards/JH.png"),
+  "QH": require("./assets/cards/QH.png"),
+  "KH": require("./assets/cards/KH.png"),
+  // Add more mappings for clubs (C) and diamonds (D)...
+};
+
+export default playingCards;
