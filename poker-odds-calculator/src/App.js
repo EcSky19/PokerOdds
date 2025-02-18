@@ -15,9 +15,11 @@ const App = () => {
   const [opponent, setOpponent] = useState([]);
   const [odds, setOdds] = useState(null);
 
-  const handleSelect = (value, setCards, maxCards, cards) => {
+  const handleSelect = (event, setCards, maxCards, cards) => {
+    const value = event.target.value;
     if (value && !cards.includes(value) && cards.length < maxCards) {
       setCards([...cards, value]);
+      event.target.value = ""; // Reset dropdown after selection
     }
   };
 
@@ -57,13 +59,13 @@ const App = () => {
               key={card}
               src={playingCards[card]}
               alt={card}
-              className="card smaller"
+              className="card extra-small all-visible"
               onClick={() => handleRemove(card, setHand, hand)}
             />
           ))}
         </div>
         {hand.length < 2 && (
-          <select onChange={(e) => handleSelect(e.target.value, setHand, 2, hand)}>
+          <select onChange={(e) => handleSelect(e, setHand, 2, hand)}>
             <option value="">Select a card</option>
             {cardOptions.filter((card) => !hand.includes(card) && !community.includes(card) && !opponent.includes(card))
               .map((card) => (
@@ -81,7 +83,7 @@ const App = () => {
               key={card}
               src={playingCards[card]}
               alt={card}
-              className="card smaller"
+              className="card extra-small all-visible"
               onClick={() => handleRemove(card, setCommunity, community)}
             />
           ))}
@@ -105,7 +107,7 @@ const App = () => {
               key={card}
               src={playingCards[card]}
               alt={card}
-              className="card smaller"
+              className="card extra-small all-visible"
               onClick={() => handleRemove(card, setOpponent, opponent)}
             />
           ))}
