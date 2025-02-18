@@ -14,8 +14,6 @@ def card_to_id(card):
     suit = card[-1]
     return ranks[rank] + suits[suit]
 
-from collections import Counter
-
 def evaluate_hand(hand, community):
     all_cards = hand + community
     ranks = sorted([card % 13 or 13 for card in all_cards], reverse=True)
@@ -24,7 +22,7 @@ def evaluate_hand(hand, community):
     rank_counts = Counter(ranks)
     suit_counts = Counter(suits)
 
-    # Find flush (same suit, at least 5 cards)
+    # Identify flush
     flush_suit = None
     for suit, count in suit_counts.items():
         if count >= 5:
@@ -34,7 +32,7 @@ def evaluate_hand(hand, community):
     flush = flush_suit is not None
     flush_cards = sorted([rank for card, rank in zip(all_cards, ranks) if card // 13 == flush_suit], reverse=True) if flush else []
 
-    # Find straight
+    # Identify straight
     sorted_ranks = sorted(set(ranks), reverse=True)
     straight = False
     straight_high_card = 0
@@ -44,7 +42,7 @@ def evaluate_hand(hand, community):
             straight = True
             straight_high_card = sorted_ranks[i]
 
-    # Check for straight flush (straight + flush)
+    # Identify straight flush (must check before separate flush or straight)
     straight_flush = False
     straight_flush_high_card = 0
     if flush and len(flush_cards) >= 5:
@@ -54,9 +52,9 @@ def evaluate_hand(hand, community):
                 straight_flush_high_card = flush_cards[i]
                 break
 
-    # Hand rankings (higher number means stronger hand)
+    # Ensure proper ranking order
     if straight_flush:
-        return (8, straight_flush_high_card)  # Straight Flush
+        return (8, straight_flush_high_card)  # ✅ Highest rank: Straight Flush
     elif 4 in rank_counts.values():
         quad_rank = max(rank for rank, count in rank_counts.items() if count == 4)
         return (7, quad_rank)  # Four of a Kind
