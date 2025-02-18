@@ -2,12 +2,18 @@ import React, { useState } from 'react';
 import './App.css';
 import playingCards from './playingCards'; // Import playing card images
 
+const cardOptions = [
+  "AS", "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS",
+  "AC", "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "JC", "QC", "KC",
+  "AD", "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "JD", "QD", "KD",
+  "AH", "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", "10H", "JH", "QH", "KH"
+];
+
 const App = () => {
   const [hand, setHand] = useState([]);
   const [community, setCommunity] = useState([]);
   const [opponent, setOpponent] = useState([]);
   const [odds, setOdds] = useState(null);
-  const [stage, setStage] = useState(0); // 0: pre-flop, 3: flop, 4: turn, 5: river
 
   const handleSelect = (value, setCards, maxCards, cards) => {
     if (value && !cards.includes(value) && cards.length < maxCards) {
@@ -51,11 +57,20 @@ const App = () => {
               key={card}
               src={playingCards[card]}
               alt={card}
-              className="card"
+              className="card smaller"
               onClick={() => handleRemove(card, setHand, hand)}
             />
           ))}
         </div>
+        {hand.length < 2 && (
+          <select onChange={(e) => handleSelect(e.target.value, setHand, 2, hand)}>
+            <option value="">Select a card</option>
+            {cardOptions.filter((card) => !hand.includes(card) && !community.includes(card) && !opponent.includes(card))
+              .map((card) => (
+                <option key={card} value={card}>{card}</option>
+              ))}
+          </select>
+        )}
       </div>
 
       <div className="section">
@@ -66,11 +81,20 @@ const App = () => {
               key={card}
               src={playingCards[card]}
               alt={card}
-              className="card"
+              className="card smaller"
               onClick={() => handleRemove(card, setCommunity, community)}
             />
           ))}
         </div>
+        {community.length < 5 && (
+          <select onChange={(e) => handleSelect(e.target.value, setCommunity, 5, community)}>
+            <option value="">Select a card</option>
+            {cardOptions.filter((card) => !hand.includes(card) && !community.includes(card) && !opponent.includes(card))
+              .map((card) => (
+                <option key={card} value={card}>{card}</option>
+              ))}
+          </select>
+        )}
       </div>
 
       <div className="section">
@@ -81,14 +105,23 @@ const App = () => {
               key={card}
               src={playingCards[card]}
               alt={card}
-              className="card"
+              className="card smaller"
               onClick={() => handleRemove(card, setOpponent, opponent)}
             />
           ))}
         </div>
+        {opponent.length < 2 && (
+          <select onChange={(e) => handleSelect(e.target.value, setOpponent, 2, opponent)}>
+            <option value="">Select a card</option>
+            {cardOptions.filter((card) => !hand.includes(card) && !community.includes(card) && !opponent.includes(card))
+              .map((card) => (
+                <option key={card} value={card}>{card}</option>
+              ))}
+          </select>
+        )}
       </div>
 
-      <button className="calculate-btn" onClick={calculateOdds} disabled={hand.length !== 2 || opponent.length !== 2 || community.length !== stage}>
+      <button className="calculate-btn" onClick={calculateOdds} disabled={hand.length !== 2 || opponent.length !== 2 || community.length < 3}>
         Calculate Odds
       </button>
 
