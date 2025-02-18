@@ -89,7 +89,7 @@ const App = () => {
           ))}
         </div>
         {community.length < 5 && (
-          <select onChange={(e) => handleSelect(e.target.value, setCommunity, 5, community)}>
+          <select onChange={(e) => handleSelect(e, setCommunity, 5, community)}>
             <option value="">Select a card</option>
             {cardOptions.filter((card) => !hand.includes(card) && !community.includes(card) && !opponent.includes(card))
               .map((card) => (
@@ -113,7 +113,7 @@ const App = () => {
           ))}
         </div>
         {opponent.length < 2 && (
-          <select onChange={(e) => handleSelect(e.target.value, setOpponent, 2, opponent)}>
+          <select onChange={(e) => handleSelect(e, setOpponent, 2, opponent)}>
             <option value="">Select a card</option>
             {cardOptions.filter((card) => !hand.includes(card) && !community.includes(card) && !opponent.includes(card))
               .map((card) => (
