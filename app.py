@@ -14,6 +14,8 @@ def card_to_id(card):
     suit = card[-1]
     return ranks[rank] + suits[suit]
 
+from collections import Counter
+
 def evaluate_hand(hand, community):
     all_cards = hand + community
     ranks = sorted([card % 13 or 13 for card in all_cards], reverse=True)
@@ -22,7 +24,7 @@ def evaluate_hand(hand, community):
     rank_counts = Counter(ranks)
     suit_counts = Counter(suits)
 
-    # Check for flush
+    # Find flush (same suit, at least 5 cards)
     flush_suit = None
     for suit, count in suit_counts.items():
         if count >= 5:
@@ -32,7 +34,7 @@ def evaluate_hand(hand, community):
     flush = flush_suit is not None
     flush_cards = sorted([rank for card, rank in zip(all_cards, ranks) if card // 13 == flush_suit], reverse=True) if flush else []
 
-    # Check for straight
+    # Find straight
     sorted_ranks = sorted(set(ranks), reverse=True)
     straight = False
     straight_high_card = 0
@@ -42,17 +44,19 @@ def evaluate_hand(hand, community):
             straight = True
             straight_high_card = sorted_ranks[i]
 
-    # Check for straight flush
+    # Check for straight flush (straight + flush)
     straight_flush = False
+    straight_flush_high_card = 0
     if flush and len(flush_cards) >= 5:
         for i in range(len(flush_cards) - 4):
             if flush_cards[i:i+5] == list(range(flush_cards[i], flush_cards[i]-5, -1)):
                 straight_flush = True
+                straight_flush_high_card = flush_cards[i]
                 break
 
-    # Rank hand strength
+    # Hand rankings (higher number means stronger hand)
     if straight_flush:
-        return (8, max(flush_cards))  # Straight Flush
+        return (8, straight_flush_high_card)  # Straight Flush
     elif 4 in rank_counts.values():
         quad_rank = max(rank for rank, count in rank_counts.items() if count == 4)
         return (7, quad_rank)  # Four of a Kind
@@ -75,6 +79,7 @@ def evaluate_hand(hand, community):
         return (1, pair_rank)  # One Pair
     else:
         return (0, ranks[0])  # High Card
+
 
 
 def simulate_game(player_hand, community_cards, opponent_hand):
