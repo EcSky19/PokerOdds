@@ -16,7 +16,7 @@ def card_to_id(card):
 
 def evaluate_hand(hand, community):
     all_cards = hand + community
-    ranks = [card % 13 or 13 for card in all_cards]
+    ranks = sorted([card % 13 or 13 for card in all_cards], reverse=True)
     suits = [card // 13 for card in all_cards]
 
     rank_counts = Counter(ranks)
@@ -29,47 +29,53 @@ def evaluate_hand(hand, community):
             flush_suit = suit
             break
 
-    flush = False
-    flush_high_card = 0
-    if flush_suit is not None:
-        flush = True
-        flush_cards = [rank for card, rank in zip(all_cards, ranks) if card // 13 == flush_suit]
-        flush_high_card = max(flush_cards)
+    flush = flush_suit is not None
+    flush_cards = sorted([rank for card, rank in zip(all_cards, ranks) if card // 13 == flush_suit], reverse=True) if flush else []
 
     # Check for straight
-    sorted_ranks = sorted(set(ranks))
+    sorted_ranks = sorted(set(ranks), reverse=True)
     straight = False
     straight_high_card = 0
-    for i in range(len(sorted_ranks) - 4):
-        if sorted_ranks[i:i+5] == list(range(sorted_ranks[i], sorted_ranks[i]+5)):
-            straight = True
-            straight_high_card = sorted_ranks[i+4]
 
-    # Basic scoring logic
-    if flush and straight:
-        return (8, flush_high_card)  # Straight flush
+    for i in range(len(sorted_ranks) - 4):
+        if sorted_ranks[i:i+5] == list(range(sorted_ranks[i], sorted_ranks[i]-5, -1)):
+            straight = True
+            straight_high_card = sorted_ranks[i]
+
+    # Check for straight flush
+    straight_flush = False
+    if flush and len(flush_cards) >= 5:
+        for i in range(len(flush_cards) - 4):
+            if flush_cards[i:i+5] == list(range(flush_cards[i], flush_cards[i]-5, -1)):
+                straight_flush = True
+                break
+
+    # Rank hand strength
+    if straight_flush:
+        return (8, max(flush_cards))  # Straight Flush
     elif 4 in rank_counts.values():
         quad_rank = max(rank for rank, count in rank_counts.items() if count == 4)
-        return (7, quad_rank)  # Four of a kind
-    elif 3 in rank_counts.values() and 2 in rank_counts.values():
+        return (7, quad_rank)  # Four of a Kind
+    elif sorted(rank_counts.values(), reverse=True)[:2] == [3, 2]:
         trip_rank = max(rank for rank, count in rank_counts.items() if count == 3)
         pair_rank = max(rank for rank, count in rank_counts.items() if count == 2)
-        return (6, trip_rank, pair_rank)  # Full house
+        return (6, trip_rank, pair_rank)  # Full House
     elif flush:
-        return (5, flush_high_card)  # Flush
+        return (5, flush_cards[0])  # Flush
     elif straight:
         return (4, straight_high_card)  # Straight
     elif 3 in rank_counts.values():
         trip_rank = max(rank for rank, count in rank_counts.items() if count == 3)
-        return (3, trip_rank)  # Three of a kind
+        return (3, trip_rank)  # Three of a Kind
     elif list(rank_counts.values()).count(2) == 2:
         pair_ranks = sorted((rank for rank, count in rank_counts.items() if count == 2), reverse=True)
-        return (2, pair_ranks[0], pair_ranks[1])  # Two pair
+        return (2, pair_ranks[0], pair_ranks[1])  # Two Pair
     elif 2 in rank_counts.values():
         pair_rank = max(rank for rank, count in rank_counts.items() if count == 2)
-        return (1, pair_rank)  # One pair
+        return (1, pair_rank)  # One Pair
     else:
-        return (0, max(ranks))  # High card
+        return (0, ranks[0])  # High Card
+
 
 def simulate_game(player_hand, community_cards, opponent_hand):
     deck = set(range(1, 53))
