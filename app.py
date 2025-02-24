@@ -27,7 +27,7 @@ def evaluate_hand(hand, community):
     for suit, count in suit_counts.items():
         if count >= 5:
             flush_suit = suit
-            break
+            break#
 
     flush = flush_suit is not None
     flush_cards = sorted([rank for card, rank in zip(all_cards, ranks) if card // 13 == flush_suit], reverse=True) if flush else []
